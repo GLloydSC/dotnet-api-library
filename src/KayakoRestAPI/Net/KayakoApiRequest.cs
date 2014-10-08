@@ -2,6 +2,7 @@
 using System.Text;
 using System.Security.Cryptography;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using System.IO;
 using System.Web;
@@ -218,14 +219,18 @@ namespace KayakoRestApi.Net
                     using (StreamReader sr = new StreamReader(webResponse.GetResponseStream()))
                     {
                         string streamContents = sr.ReadToEnd();
+                        
+                        RegexOptions options = RegexOptions.Singleline | RegexOptions.Compiled;
+                        var tidyStreamContents = Regex.Match(streamContents, @"^<\?xml.*?\?>\s*?<(.*?)>.*</(\1)>", 
+                        	options, Regex.InfiniteMatchTimeout).ToString();
 
 						if (typeof(TTarget) == typeof(TestData))
 						{
-							return (TTarget)(object)new TestData(streamContents);
+							return (TTarget)(object)new TestData(tidyStreamContents);
 						}
 						else
 						{
-							using (StringReader serializerStream = new StringReader(streamContents))
+							using (StringReader serializerStream = new StringReader(tidyStreamContents))
 							{
 								TTarget responseData = (TTarget)serializer.Deserialize(serializerStream);
 								return responseData;
